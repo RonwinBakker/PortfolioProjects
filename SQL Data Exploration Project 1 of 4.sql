@@ -1,116 +1,77 @@
---Change table structure to ensure data is mapped to the correct fields
---We will create a new table with the correct structure
---Then insert the data from old table
---We will then drop the old table created with the import of the file
---Finally rename the new table
+/*
+
+Queries used for Tableau Project
+
+*/
 
 
---USE [PortfolioProject]
---GO
 
---/****** Object:  Table [dbo].[CovidDeaths]    Script Date: 11-Apr-24 3:18:10 PM ******/
---SET ANSI_NULLS ON
---GO
+-- 1. 
 
---SET QUOTED_IDENTIFIER ON
---GO
+Select SUM(new_cases) as total_cases, SUM(cast(new_deaths as int)) as total_deaths, SUM(cast(new_deaths as int))/SUM(New_Cases)*100 as DeathPercentage
+From PortfolioProject..CovidDeaths
+--Where location like '%states%'
+where continent is not null 
+--Group By date
+order by 1,2
 
---CREATE TABLE [dbo].[CovidDeathsNew](
---	[iso_code] [nvarchar](255) NULL,
---	[continent] [nvarchar](255) NULL,
---	[location] [nvarchar](255) NULL,
---	[date] [datetime] NULL,
---	[population] [bigint] NULL,
---	[total_cases] [int] NULL,
---	[new_cases] [int] NULL,
---	[new_cases_smoothed] [float] NULL,
---	[total_deaths] [int] NULL,
---	[new_deaths] [int] NULL,
---	[new_deaths_smoothed] [float] NULL,
---	[total_cases_per_million] [float] NULL,
---	[new_cases_per_million] [float] NULL,
---	[new_cases_smoothed_per_million] [float] NULL,
---	[total_deaths_per_million] [float] NULL,
---	[new_deaths_per_million] [float] NULL,
---	[new_deaths_smoothed_per_million] [float] NULL,
---	[reproduction_rate] [float] NULL,
---	[icu_patients] [int] NULL,
---	[icu_patients_per_million] [float] NULL,
---	[hosp_patients] [int] NULL,
---	[hosp_patients_per_million] [float] NULL,
---	[weekly_icu_admissions] [int] NULL,
---	[weekly_icu_admissions_per_million] [float] NULL,
---	[weekly_hosp_admissions] [int] NULL,
---	[weekly_hosp_admissions_per_million] [float] NULL,
---	[total_tests] [int] NULL
---) ON [PRIMARY]
---GO
+-- Just a double check based off the data provided
+-- numbers are extremely close so we will keep them - The Second includes "International"  Location
 
---INSERT INTO [dbo].[CovidDeathsNew]
---           ([iso_code]
---           ,[continent]
---           ,[location]
---           ,[date]
---           ,[population]
---           ,[total_cases]
---           ,[new_cases]
---           ,[new_cases_smoothed]
---           ,[total_deaths]
---           ,[new_deaths]
---           ,[new_deaths_smoothed]
---           ,[total_cases_per_million]
---           ,[new_cases_per_million]
---           ,[new_cases_smoothed_per_million]
---           ,[total_deaths_per_million]
---           ,[new_deaths_per_million]
---           ,[new_deaths_smoothed_per_million]
---           ,[reproduction_rate]
---           ,[icu_patients]
---           ,[icu_patients_per_million]
---           ,[hosp_patients]
---           ,[hosp_patients_per_million]
---           ,[weekly_icu_admissions]
---           ,[weekly_icu_admissions_per_million]
---           ,[weekly_hosp_admissions]
---           ,[weekly_hosp_admissions_per_million]
---           ,[total_tests])
---     select [iso_code]
---           ,[continent]
---           ,[location]
---           ,[date]
---           ,[population]
---           ,[total_cases]
---           ,[new_cases]
---           ,[new_cases_smoothed]
---           ,[total_deaths]
---           ,[new_deaths]
---           ,[new_deaths_smoothed]
---           ,[total_cases_per_million]
---           ,[new_cases_per_million]
---           ,[new_cases_smoothed_per_million]
---           ,[total_deaths_per_million]
---           ,[new_deaths_per_million]
---           ,[new_deaths_smoothed_per_million]
---           ,[reproduction_rate]
---           ,[icu_patients]
---           ,[icu_patients_per_million]
---           ,[hosp_patients]
---           ,[hosp_patients_per_million]
---           ,[weekly_icu_admissions]
---           ,[weekly_icu_admissions_per_million]
---           ,[weekly_hosp_admissions]
---           ,[weekly_hosp_admissions_per_million]
---           ,[total_tests] 
---		   from [dbo].[CovidDeaths]
---GO
---/****** Object:  Table [dbo].[CovidDeaths]    Script Date: 11-Apr-24 3:18:10 PM ******/
 
-----Rename manually
---IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[CovidDeaths]') AND type in (N'U'))
---DROP TABLE [dbo].[CovidDeaths$]
---GO
+--Select SUM(new_cases) as total_cases, SUM(cast(new_deaths as int)) as total_deaths, SUM(cast(new_deaths as int))/SUM(New_Cases)*100 as DeathPercentage
+--From PortfolioProject..CovidDeaths
+----Where location like '%states%'
+--where location = 'World'
+----Group By date
+--order by 1,2
 
---EXEC sp_rename 'CovidDeathsNew', 'CovidDeaths'
+
+-- 2. 
+
+-- We take these out as they are not inluded in the above queries and want to stay consistent
+-- European Union is part of Europe
+
+Select location, SUM(cast(new_deaths as int)) as TotalDeathCount
+From PortfolioProject..CovidDeaths
+--Where location like '%states%'
+Where continent is null 
+and location not in ('World', 'European Union', 'International')
+Group by location
+order by TotalDeathCount desc
+
+
+-- 3.
+
+Select Location, Population, MAX(total_cases) as HighestInfectionCount,  Max((total_cases/population))*100 as PercentPopulationInfected
+From PortfolioProject..CovidDeaths
+--Where location like '%states%'
+Group by Location, Population
+order by PercentPopulationInfected desc
+
+
+-- 4.
+
+
+Select Location, Population,date, MAX(total_cases) as HighestInfectionCount,  Max((total_cases/population))*100 as PercentPopulationInfected
+From PortfolioProject..CovidDeaths
+--Where location like '%states%'
+Group by Location, Population, date
+order by PercentPopulationInfected desc
+
+
+
+
+
+
+
+
+
+
+
+
+-- Queries I originally had, but excluded some because it created too long of video
+-- Here only in case you want to check them out
 
 --select Data that we are going to be using
 
